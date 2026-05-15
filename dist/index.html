@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PHC servis | Síťová Diagnostika & Speedtest</title>
+    <meta name="description" content="Komplexní diagnostika vašeho připojení. Zjištění IP adresy, ISP, polohy a měření rychlosti internetu.">
+    <meta name="author" content="PHC servis; www.phcservis.cz">
+    <link rel="icon" type="image/svg+xml" href="/vite.svg">
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+  <script type="module" crossorigin src="/assets/index-C33FUGRs.js"></script>
+  <link rel="stylesheet" crossorigin href="/assets/index-yVQ-0iXS.css">
+</head>
+<body>
+    <div id="app">
+        <div class="background-orchestra">
+            <div class="orb orb-1"></div>
+            <div class="orb orb-2"></div>
+            <div class="orb orb-3"></div>
+            <div class="glass-overlay"></div>
+        </div>
+
+        <div class="main-layout">
+            <header class="app-header">
+                <div class="logo-container">
+                    <div class="logo-accent"></div>
+                    <h1 class="brand-name">PHC servis <span>NetTools</span></h1>
+                </div>
+                <div class="header-status">
+                    <span class="status-dot"></span>
+                    <span id="global-status">Systém aktivní</span>
+                </div>
+            </header>
+
+            <div class="dashboard-grid">
+                <!-- Hero IP Card -->
+                <section class="card hero-card">
+                    <div class="card-glow"></div>
+                    <div class="ip-container">
+                        <span class="label">VAŠE VEŘEJNÁ IP ADRESA</span>
+                        <div class="ip-row">
+                            <h2 id="main-ip" class="shimmer-text">Zjišťování...</h2>
+                            <button id="copy-ip" class="icon-btn" title="Kopírovat IP">
+                                <i data-lucide="copy"></i>
+                            </button>
+                        </div>
+                        <div id="ip-meta" class="meta-row">
+                            <span class="badge" id="isp-badge">Načítám ISP...</span>
+                            <span class="badge secondary" id="location-badge">Lokalizace...</span>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Speedtest Card -->
+                <section class="card speedtest-card full-width">
+                    <div class="card-header">
+                        <div class="header-title">
+                            <i data-lucide="gauge"></i>
+                            <h3>Měření rychlosti</h3>
+                        </div>
+                        <p class="header-subtitle">Oficiální uzel Ookla PHC servis</p>
+                    </div>
+                    <div class="speedtest-wrapper">
+                        <iframe 
+                            id="speedtest-frame"
+                            src="https://phcomp.speedtestcustom.com"
+                            allow="geolocation"
+                            title="Speedtest">
+                        </iframe>
+                    </div>
+                </section>
+
+                <!-- Detailed Info Cards -->
+                <div class="info-group full-width">
+                    <!-- Network Card -->
+                    <section class="card info-card">
+                        <div class="card-header-small">
+                            <i data-lucide="wifi"></i>
+                            <h4>Sítě & Připojení</h4>
+                        </div>
+                        <ul class="data-list">
+                            <li><span class="data-label">Poskytovatel</span> <span class="data-value" id="det-isp">-</span></li>
+                            <li><span class="data-label">ASN</span> <span class="data-value" id="det-asn">-</span></li>
+                            <li><span class="data-label">Typ připojení</span> <span class="data-value" id="det-con-type">-</span></li>
+                            <li><span class="data-label">Latence (RTT)</span> <span class="data-value" id="det-rtt">-</span></li>
+                        </ul>
+                    </section>
+
+                    <!-- Location Card -->
+                    <section class="card info-card">
+                        <div class="card-header-small">
+                            <i data-lucide="map-pin"></i>
+                            <h4>Geolokace</h4>
+                        </div>
+                        <ul class="data-list">
+                            <li><span class="data-label">Město</span> <span class="data-value" id="det-city">-</span></li>
+                            <li><span class="data-label">Kraj / Stát</span> <span class="data-value" id="det-region">-</span></li>
+                            <li><span class="data-label">Země</span> <span class="data-value" id="det-country">-</span></li>
+                            <li><span class="data-label">Časové pásmo</span> <span class="data-value" id="det-tz">-</span></li>
+                        </ul>
+                    </section>
+                </div>
+
+                <div class="info-group full-width">
+                    <!-- Protocol & Security Card -->
+                    <section class="card info-card full-width">
+                        <div class="card-header-small">
+                            <i data-lucide="shield-check"></i>
+                            <h4>Diagnostika protokolu & Bezpečnosti</h4>
+                        </div>
+                        <div class="lan-grid">
+                            <ul class="data-list">
+                                <li>
+                                    <span class="data-label">IPv6 Konektivita</span> 
+                                    <span class="data-value" id="det-ipv6">Zjišťování...</span>
+                                </li>
+                                <li>
+                                    <span class="data-label">Síťový protokol</span> 
+                                    <span class="data-value highlight" id="det-protocol">Načítám...</span>
+                                </li>
+                                <li>
+                                    <span class="data-label">VPN / Proxy detekce</span> 
+                                    <span class="data-value" id="det-vpn">Analyzuji IP...</span>
+                                </li>
+                                <li>
+                                    <span class="data-label">DNS DNSSEC podpora</span> 
+                                    <span class="data-value" id="det-dnssec">Kontrola...</span>
+                                </li>
+                            </ul>
+                            <div class="lan-notice">
+                                <i data-lucide="activity"></i>
+                                <p>Tato diagnostika ověřuje integritu vašeho připojení a shodu s nejnovějšími standardy (HTTP/3, IPv6). Pomáhá odhalit skryté VPN tunely a ověřit, zda váš prohlížeč využívá maximální možnou rychlost protokolu.</p>
+                            </div>
+                        </div>
+                    </section>
+                </div>
+
+                <!-- Capabilities Card -->
+                <section class="card info-card full-width capabilities">
+                    <div class="card-header-small">
+                        <i data-lucide="shield-check"></i>
+                        <h4>Podporované technologie & Ochrana</h4>
+                    </div>
+                    <div class="tag-cloud" id="tech-tags">
+                        <!-- Tags will be injected here -->
+                    </div>
+                </section>
+            </div>
+
+            <footer class="app-footer">
+                <div class="footer-content">
+                    <p>© <span id="year"></span> PHC servis s.r.o. | <a href="https://www.phcservis.cz" target="_blank">phcservis.cz</a></p>
+                    <div class="social-links">
+                        <a href="mailto:internet@phcservis.cz" title="Email"><i data-lucide="mail"></i></a>
+                        <a href="tel:+420000000000" title="Telefon"><i data-lucide="phone"></i></a>
+                    </div>
+                </div>
+            </footer>
+        </div>
+    </div>
+</body>
+</html>
