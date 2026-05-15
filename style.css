@@ -457,6 +457,234 @@ body {
   line-height: 1.4;
 }
 
+/* Speedtest Dashboard */
+.speedtest-dashboard {
+  padding: 3rem;
+  display: flex;
+  flex-direction: column;
+  gap: 3rem;
+}
+
+.test-controls {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.primary-btn {
+  background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+  color: white;
+  border: none;
+  padding: 1.25rem 2.5rem;
+  border-radius: 100px;
+  font-family: var(--font-display);
+  font-size: 1.1rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  box-shadow: 0 10px 20px var(--primary-glow);
+  transition: all 0.3s cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.primary-btn:hover {
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 15px 30px var(--primary-glow);
+}
+
+.primary-btn:active {
+  transform: translateY(1px);
+}
+
+.primary-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  filter: grayscale(0.5);
+}
+
+.progress-bar {
+  width: 100%;
+  max-width: 400px;
+  height: 6px;
+  background: var(--surface-light);
+  border-radius: 100px;
+  overflow: hidden;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.progress-bar.active {
+  opacity: 1;
+}
+
+.progress-fill {
+  height: 100%;
+  width: 0%;
+  background: var(--primary);
+  box-shadow: 0 0 10px var(--primary);
+  transition: width 0.3s ease;
+}
+
+/* Speedtest Visuals */
+.test-visuals {
+  display: grid;
+  grid-template-columns: 1fr 1.5fr;
+  gap: 2rem;
+  align-items: center;
+}
+
+.gauges-container {
+  display: flex;
+  gap: 1.5rem;
+  justify-content: center;
+}
+
+.circular-gauge {
+  position: relative;
+  width: 160px;
+  height: 160px;
+}
+
+.circular-gauge svg {
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
+}
+
+.gauge-bg {
+  fill: none;
+  stroke: var(--surface-light);
+  stroke-width: 8;
+}
+
+.gauge-progress {
+  fill: none;
+  stroke: var(--primary);
+  stroke-width: 8;
+  stroke-linecap: round;
+  stroke-dasharray: 283;
+  stroke-dashoffset: 283;
+  transition: stroke-dashoffset 0.5s ease, stroke 0.3s;
+}
+
+#circle-upload {
+  stroke: var(--accent);
+}
+
+.gauge-info {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+}
+
+.gauge-info .label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.gauge-info .value {
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  font-weight: 800;
+  line-height: 1;
+  margin: 0.2rem 0;
+}
+
+.gauge-info .unit {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+}
+
+.graph-container {
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 1.5rem;
+  height: 200px;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.graph-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.mini-progress {
+  width: 100px;
+  height: 4px;
+  background: var(--surface-light);
+  border-radius: 100px;
+  overflow: hidden;
+}
+
+#speed-graph {
+  width: 100%;
+  height: 100%;
+}
+
+.primary-btn.mini-btn {
+  padding: 0.75rem 1.5rem;
+  font-size: 0.9rem;
+  box-shadow: 0 4px 12px var(--primary-glow);
+}
+
+.secondary-stats {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 2rem;
+  padding: 0.75rem 1.5rem;
+  background: var(--glass);
+  border-radius: 100px;
+}
+
+@media (max-width: 600px) {
+  .secondary-stats {
+    flex-direction: column;
+    border-radius: var(--radius-md);
+    gap: 1.5rem;
+    padding: 1.5rem;
+  }
+}
+
+.mini-stat {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 0.9rem;
+  color: var(--text-muted);
+}
+
+.mini-stat strong {
+  color: var(--text);
+  font-family: var(--font-display);
+}
+
+.mini-stat i {
+  color: var(--primary);
+  width: 18px;
+  height: 18px;
+}
+
+@media (max-width: 900px) {
+  .test-visuals {
+    grid-template-columns: 1fr;
+  }
+}
+
 /* Footer */
 .app-footer {
   margin-top: 4rem;

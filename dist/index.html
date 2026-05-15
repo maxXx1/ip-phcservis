@@ -6,7 +6,7 @@
     <title>PHC servis | Síťová Diagnostika & Speedtest</title>
     <meta name="description" content="Komplexní diagnostika vašeho připojení. Zjištění IP adresy, ISP, polohy a měření rychlosti internetu.">
     <meta name="author" content="PHC servis; www.phcservis.cz">
-    <link rel="icon" type="image/svg+xml" href="/vite.svg">
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
     
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -15,8 +15,8 @@
     
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
-  <script type="module" crossorigin src="/assets/index-C33FUGRs.js"></script>
-  <link rel="stylesheet" crossorigin href="/assets/index-yVQ-0iXS.css">
+  <script type="module" crossorigin src="/assets/index-DDey8XN0.js"></script>
+  <link rel="stylesheet" crossorigin href="/assets/index-mpQmccD_.css">
 </head>
 <body>
     <div id="app">
@@ -41,7 +41,7 @@
 
             <div class="dashboard-grid">
                 <!-- Hero IP Card -->
-                <section class="card hero-card">
+                <section class="card hero-card full-width">
                     <div class="card-glow"></div>
                     <div class="ip-container">
                         <span class="label">VAŠE VEŘEJNÁ IP ADRESA</span>
@@ -65,15 +65,62 @@
                             <i data-lucide="gauge"></i>
                             <h3>Měření rychlosti</h3>
                         </div>
-                        <p class="header-subtitle">Oficiální uzel Ookla PHC servis</p>
                     </div>
-                    <div class="speedtest-wrapper">
-                        <iframe 
-                            id="speedtest-frame"
-                            src="https://phcomp.speedtestcustom.com"
-                            allow="geolocation"
-                            title="Speedtest">
-                        </iframe>
+                    <div class="speedtest-dashboard">
+                        <div class="test-visuals">
+                            <!-- Circular Gauges -->
+                            <div class="gauges-container">
+                                <div class="circular-gauge" id="gauge-container-download">
+                                    <svg viewBox="0 0 100 100">
+                                        <circle class="gauge-bg" cx="50" cy="50" r="45"></circle>
+                                        <circle id="circle-download" class="gauge-progress" cx="50" cy="50" r="45"></circle>
+                                    </svg>
+                                    <div class="gauge-info">
+                                        <span class="label">Download</span>
+                                        <span class="value" id="val-download">0.00</span>
+                                        <span class="unit">Mbps</span>
+                                    </div>
+                                </div>
+                                <div class="circular-gauge" id="gauge-container-upload">
+                                    <svg viewBox="0 0 100 100">
+                                        <circle class="gauge-bg" cx="50" cy="50" r="45"></circle>
+                                        <circle id="circle-upload" class="gauge-progress" cx="50" cy="50" r="45"></circle>
+                                    </svg>
+                                    <div class="gauge-info">
+                                        <span class="label">Upload</span>
+                                        <span class="value" id="val-upload">0.00</span>
+                                        <span class="unit">Mbps</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Real-time Graph -->
+                            <div class="graph-container">
+                                <div class="graph-header">
+                                    <span>Průběh měření</span>
+                                    <div id="test-progress" class="mini-progress">
+                                        <div class="progress-fill"></div>
+                                    </div>
+                                </div>
+                                <canvas id="speed-graph"></canvas>
+                            </div>
+                        </div>
+                        
+                        <div class="secondary-stats">
+                            <div class="mini-stat">
+                                <i data-lucide="arrow-down-up"></i>
+                                <span>Ping: <strong id="val-ping">0</strong> ms</span>
+                            </div>
+                            
+                            <button id="start-test" class="primary-btn mini-btn">
+                                <i data-lucide="play"></i> Spustit
+                            </button>
+
+                            <div class="mini-stat">
+                                <i data-lucide="activity"></i>
+                                <span>Jitter: <strong id="val-jitter">0</strong> ms</span>
+                            </div>
+                        </div>
                     </div>
                 </section>
 
