@@ -1,18 +1,15 @@
 import './style.css';
 
 document.addEventListener('DOMContentLoaded', () => {
-    // Initialize Lucide icons
-    if (window.lucide) {
-        window.lucide.createIcons();
-    }
+    if (window.lucide) window.lucide.createIcons();
 
-    // --- Selectors ---
     const ipv4Display = document.getElementById('ipv4-display');
     const ipv6Display = document.getElementById('ipv6-display');
     const ispBadge = document.getElementById('isp-badge');
     const locationBadge = document.getElementById('location-badge');
     const yearSpan = document.getElementById('year');
-    
+    if (yearSpan) yearSpan.textContent = new Date().getFullYear();
+
     const updateText = (id, text) => {
         const el = document.getElementById(id);
         if (el) el.textContent = text;
@@ -26,98 +23,114 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    if (yearSpan) yearSpan.textContent = new Date().getFullYear();
-
-    // --- Core Network Detection ---
-    async function detectNetwork() {
-        // 1. IPv4 (ipify)
+    // --- Isolated Fetch Helpers ---
+    async function safeFetch(url, timeout = 5000) {
+        const controller = new AbortController();
+        const id = setTimeout(() => controller.abort(), timeout);
         try {
-            const v4res = await fetch('https://api.ipify.org?format=json');
-            const v4data = await v4res.json();
-            ipv4Display.textContent = v4data.ip;
+            const response = await fetch(url, { signal: controller.signal });
+            clearTimeout(id);
+            if (!response.ok) return null;
+            return await response.json();
         } catch (e) {
-            ipv4Display.textContent = 'Není k dispozici';
-        }
-
-        // 2. IPv6 (ipify)
-        try {
-            const v6res = await fetch('https://api6.ipify.org?format=json');
-            const v6data = await v6res.json();
-            ipv6Display.textContent = v6data.ip;
-        } catch (e) {
-            ipv6Display.textContent = 'Není k dispozici';
-        }
-
-        // 3. Metadata (FreeIPAPI - Highly CORS compatible)
-        try {
-            // We call without IP to let the server detect the client IP
-            const response = await fetch('https://freeipapi.com/api/json/');
-            const data = await response.json();
-            
-            ispBadge.textContent = data.asName || 'Neznámý ISP';
-            locationBadge.textContent = `${data.cityName}, ${data.countryName}`;
-            
-            updateText('det-isp', data.asName || '-');
-            updateText('det-asn', data.asNumber ? `AS${data.asNumber}` : '-');
-            updateText('det-org', data.asName || '-');
-            updateText('det-geo-sub', `${data.cityName}, ${data.regionName}`);
-            updateText('det-country', data.countryName);
-            updateText('det-tz', data.timeZone || '-');
-            
-            // Connection Type
-            const conn = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
-            if (conn) {
-                updateText('det-con-type', conn.effectiveType?.toUpperCase() || '-');
-            }
-
-            // Security Analysis
-            if (data.isProxy) {
-                updateText('det-vpn', '⚠️ Detekována (Proxy/VPN)');
-                updateText('det-threat', '50/100 (Medium)');
-                setStatusClass('det-threat', 'status-warning');
-            } else {
-                updateText('det-vpn', '✅ Přímé (Rezidenční)');
-                updateText('det-threat', '0/100 (Čisté)');
-                setStatusClass('det-threat', 'status-safe');
-                updateText('det-blacklist', 'Čistá (Clean)');
-                setStatusClass('det-blacklist', 'status-safe');
-            }
-
-            // Cloudflare Trace (for Edge info)
-            const traceRes = await fetch('https://www.cloudflare.com/cdn-cgi/trace');
-            const traceText = await traceRes.text();
-            const traceData = Object.fromEntries(traceText.trim().split('\n').map(l => l.split('=')));
-            updateText('det-colo', traceData.colo || '-');
-            updateText('det-protocol', traceData.http || 'HTTP/2');
-            
-            // IPv6 Diagnostic
-            const hasV6 = ipv6Display.textContent.includes(':') || (traceData.ip && traceData.ip.includes(':'));
-            updateText('det-ipv6', hasV6 ? '✅ Aktivní' : '❌ Pouze IPv4');
-
-        } catch (error) {
-            console.error('Metadata fetch failed:', error);
+            clearTimeout(id);
+            return null;
         }
     }
 
-    // --- Advanced Diagnostics ---
+    async function detectNetwork() {
+        // 1. IPv4 (Independent)
+        safeFetch('https://api.ipify.org?format=json').then(data => {
+            if (data) ipv4Display.textContent = data.ip;
+        });
+
+        // 2. IPv6 (Independent)
+        safeFetch('https://api6.ipify.org?format=json').then(data => {
+            if (data) ipv6Display.textContent = data.ip;
+            else ipv6Display.textContent = 'Není k dispozici';
+        });
+
+        // 3. Cloudflare Trace (Independent)
+        fetch('https://www.cloudflare.com/cdn-cgi/trace')
+            .then(res => res.text())
+            .then(text => {
+                const data = Object.fromEntries(text.trim().split('\n').map(l => l.split('=')));
+                updateText('det-colo', data.colo || '-');
+                updateText('det-protocol', data.http || 'HTTP/2');
+                const hasV6 = data.ip && data.ip.includes(':');
+                updateText('det-ipv6', hasV6 ? '✅ Aktivní' : '❌ Pouze IPv4');
+            }).catch(() => {});
+
+        // 4. Metadata (Multi-source fallback)
+        async function getMetadata() {
+            // Source A: ipwho.is (Primary)
+            let data = await safeFetch('https://ipwho.is/');
+            
+            // Source B: freeipapi.com (Fallback)
+            if (!data || !data.success) {
+                const raw = await safeFetch('https://freeipapi.com/api/json/');
+                if (raw) {
+                    data = {
+                        success: true,
+                        connection: { isp: raw.asName, asn: raw.asNumber, org: raw.asName },
+                        city: raw.cityName,
+                        country: raw.countryName,
+                        region: raw.regionName,
+                        timezone: { id: raw.timeZone },
+                        reverse: '-'
+                    };
+                }
+            }
+
+            if (data && data.success) {
+                ispBadge.textContent = data.connection?.isp || data.connection?.org || 'Zjištěno';
+                locationBadge.textContent = `${data.city}, ${data.country}`;
+                
+                updateText('det-isp', data.connection?.isp || '-');
+                updateText('det-asn', data.connection?.asn ? `AS${data.connection.asn}` : '-');
+                updateText('det-org', data.connection?.org || '-');
+                updateText('det-geo-sub', `${data.city}, ${data.region || ''}`);
+                updateText('det-country', data.country);
+                updateText('det-tz', data.timezone?.id || '-');
+                updateText('ptr-ipv4', data.reverse || '-');
+
+                // Security Analysis
+                const vpnKeywords = ['vpn', 'proxy', 'hosting', 'datacenter', 'cloud', 'server', 'mullvad', 'nordvpn'];
+                const ispStr = (data.connection?.isp || '').toLowerCase();
+                const isVpn = vpnKeywords.some(k => ispStr.includes(k)) || data.security?.vpn;
+                
+                if (isVpn) {
+                    updateText('det-vpn', '⚠️ Datacentrum / VPN');
+                    updateText('det-threat', '40/100 (Medium)');
+                    setStatusClass('det-threat', 'status-warning');
+                    updateText('det-blacklist', 'Možná přítomnost');
+                } else {
+                    updateText('det-vpn', '✅ Rezidenční síť');
+                    updateText('det-threat', '0/100 (Safe)');
+                    setStatusClass('det-threat', 'status-safe');
+                    updateText('det-blacklist', 'Čistá (Clean)');
+                    setStatusClass('det-blacklist', 'status-safe');
+                }
+            }
+        }
+        getMetadata();
+    }
+
     async function detectAdvanced() {
         // DNS Resolver
-        try {
-            const dnsRes = await fetch('https://edns.ip-api.com/json');
-            const dnsData = await dnsRes.json();
-            updateText('dns-ip', dnsData.dns.ip);
-            updateText('dns-isp', dnsData.dns.geo.split(' (')[0]);
-        } catch (e) {
-            updateText('dns-ip', 'Zjišťování...');
-            updateText('dns-isp', '-');
-        }
+        safeFetch('https://edns.ip-api.com/json').then(data => {
+            if (data && data.dns) {
+                updateText('dns-ip', data.dns.ip);
+                updateText('dns-isp', data.dns.geo.split(' (')[0]);
+            }
+        });
 
-        // Global Ping (Stable targets)
+        // Global Ping (Stable targets with correct success handling)
         const pingRegions = [
-            { id: 'eu', url: 'https://www.google.cz/favicon.ico', label: 'Evropa' },
-            { id: 'us', url: 'https://www.google.com/favicon.ico', label: 'USA' },
-            { id: 'as', url: 'https://www.u-tokyo.ac.jp/favicon.ico', label: 'Asie' },
-            { id: 'au', url: 'https://www.unimelb.edu.au/favicon.ico', label: 'Austrálie' }
+            { id: 'eu', url: 'https://www.google.cz/generate_204' },
+            { id: 'us', url: 'https://www.google.com/generate_204' },
+            { id: 'as', url: 'https://www.google.co.jp/generate_204' },
+            { id: 'au', url: 'https://www.google.com.au/generate_204' }
         ];
 
         pingRegions.forEach(region => {
@@ -155,10 +168,9 @@ document.addEventListener('DOMContentLoaded', () => {
     setupClipboard('copy-ipv4', 'ipv4-display');
     setupClipboard('copy-ipv6', 'ipv6-display');
 
-    // --- Launch ---
     detectNetwork();
     detectAdvanced();
-
+    
     // Tech tags
     const tagsContainer = document.getElementById('tech-tags');
     if (tagsContainer) {
@@ -166,7 +178,8 @@ document.addEventListener('DOMContentLoaded', () => {
             { name: 'Cookies', val: navigator.cookieEnabled },
             { name: 'LocalStorage', val: !!window.localStorage },
             { name: 'ServiceWorker', val: 'serviceWorker' in navigator },
-            { name: 'WebGL', val: !!window.WebGLRenderingContext }
+            { name: 'WebGL', val: !!window.WebGLRenderingContext },
+            { name: 'WebAssembly', val: typeof WebAssembly === "object" }
         ];
         caps.forEach(cap => {
             const span = document.createElement('span');
