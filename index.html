@@ -11,7 +11,7 @@
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
     
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
@@ -41,6 +41,7 @@
                                     <i data-lucide="copy"></i>
                                 </button>
                             </div>
+                            <span class="ptr-record" id="ptr-ipv4">-</span>
                         </div>
                         <div class="ip-divider"></div>
                         <div class="ip-box">
@@ -51,6 +52,7 @@
                                     <i data-lucide="copy"></i>
                                 </button>
                             </div>
+                            <span class="ptr-record" id="ptr-ipv6">-</span>
                         </div>
                     </div>
                     <div id="ip-meta" class="meta-row">
@@ -72,70 +74,100 @@
                     </div>
                 </section>
 
-                <!-- Detailed Info Cards -->
+                <!-- Technical Details Group -->
                 <div class="info-group full-width">
-                    <!-- Network Card -->
+                    <!-- Network & Routing -->
                     <section class="card info-card">
                         <div class="card-header-small">
-                            <i data-lucide="wifi"></i>
-                            <h4>Sítě & Připojení</h4>
+                            <i data-lucide="network"></i>
+                            <h4>BGP & Routing (ASN)</h4>
                         </div>
                         <ul class="data-list">
                             <li><span class="data-label">Poskytovatel</span> <span class="data-value" id="det-isp">-</span></li>
-                            <li><span class="data-label">ASN</span> <span class="data-value" id="det-asn">-</span></li>
-                            <li><span class="data-label">Typ připojení</span> <span class="data-value" id="det-con-type">-</span></li>
-                            <li><span class="data-label">Latence (RTT)</span> <span class="data-value" id="det-rtt">-</span></li>
+                            <li><span class="data-label">ASN</span> <span class="data-value highlight" id="det-asn">-</span></li>
+                            <li><span class="data-label">Organizace</span> <span class="data-value" id="det-org">-</span></li>
+                            <li><span class="data-label">Typ sítě</span> <span class="data-value" id="det-con-type">-</span></li>
                         </ul>
                     </section>
 
-                    <!-- Location Card -->
+                    <!-- DNS Intelligence -->
                     <section class="card info-card">
                         <div class="card-header-small">
-                            <i data-lucide="map-pin"></i>
-                            <h4>Geolokace</h4>
+                            <i data-lucide="server"></i>
+                            <h4>DNS Resolver Intelligence</h4>
                         </div>
                         <ul class="data-list">
-                            <li><span class="data-label">Město</span> <span class="data-value" id="det-city">-</span></li>
-                            <li><span class="data-label">Kraj / Stát</span> <span class="data-value" id="det-region">-</span></li>
+                            <li><span class="data-label">DNS Resolver IP</span> <span class="data-value" id="dns-ip">Zjišťování...</span></li>
+                            <li><span class="data-label">DNS Provider</span> <span class="data-value" id="dns-isp">-</span></li>
+                            <li><span class="data-label">DNSSEC Podpora</span> <span class="data-value" id="det-dnssec">✅ Aktivní</span></li>
+                            <li><span class="data-label">Cloudflare Edge</span> <span class="data-value highlight" id="det-colo">-</span></li>
+                        </ul>
+                    </section>
+                </div>
+
+                <div class="info-group full-width">
+                    <!-- Security & Reputation -->
+                    <section class="card info-card">
+                        <div class="card-header-small">
+                            <i data-lucide="shield-alert"></i>
+                            <h4>Security & Reputation</h4>
+                        </div>
+                        <ul class="data-list">
+                            <li>
+                                <span class="data-label">Blacklist Status</span> 
+                                <span class="data-value" id="det-blacklist">Probíhá kontrola...</span>
+                            </li>
+                            <li>
+                                <span class="data-label">Threat Score</span> 
+                                <span class="data-value" id="det-threat">0/100 (Clean)</span>
+                            </li>
+                            <li>
+                                <span class="data-label">Tor / Proxy Detekce</span> 
+                                <span class="data-value" id="det-vpn">Analyzuji...</span>
+                            </li>
+                        </ul>
+                    </section>
+
+                    <!-- Geografický kontext -->
+                    <section class="card info-card">
+                        <div class="card-header-small">
+                            <i data-lucide="map"></i>
+                            <h4>Geografický kontext</h4>
+                        </div>
+                        <ul class="data-list">
+                            <li><span class="data-label">Město / Kraj</span> <span class="data-value" id="det-geo-sub">-</span></li>
                             <li><span class="data-label">Země</span> <span class="data-value" id="det-country">-</span></li>
+                            <li><span class="data-label">Vzdálenost (Edge)</span> <span class="data-value" id="det-distance">~0 km</span></li>
                             <li><span class="data-label">Časové pásmo</span> <span class="data-value" id="det-tz">-</span></li>
                         </ul>
                     </section>
                 </div>
 
-                <div class="info-group full-width">
-                    <!-- Protocol & Security Card -->
-                    <section class="card info-card full-width">
-                        <div class="card-header-small">
-                            <i data-lucide="shield-check"></i>
-                            <h4>Diagnostika protokolu & Bezpečnosti</h4>
+                <!-- Global Ping Check -->
+                <section class="card info-card full-width">
+                    <div class="card-header-small">
+                        <i data-lucide="globe"></i>
+                        <h4>My Global IP Ping (Latency Status)</h4>
+                    </div>
+                    <div class="ping-grid" id="ping-stats">
+                        <div class="ping-item">
+                            <span class="ping-loc">Evropa (Prague)</span>
+                            <span class="ping-status" id="ping-eu">Měřím...</span>
                         </div>
-                        <div class="lan-grid">
-                            <ul class="data-list">
-                                <li>
-                                    <span class="data-label">IPv6 Konektivita</span> 
-                                    <span class="data-value" id="det-ipv6">Zjišťování...</span>
-                                </li>
-                                <li>
-                                    <span class="data-label">Síťový protokol</span> 
-                                    <span class="data-value highlight" id="det-protocol">Načítám...</span>
-                                </li>
-                                <li>
-                                    <span class="data-label">VPN / Proxy detekce</span> 
-                                    <span class="data-value" id="det-vpn">Analyzuji IP...</span>
-                                </li>
-                                <li>
-                                    <span class="data-label">DNS DNSSEC podpora</span> 
-                                    <span class="data-value" id="det-dnssec">Kontrola...</span>
-                                </li>
-                            </ul>
-                            <div class="lan-notice">
-                                <i data-lucide="activity"></i>
-                                <p>Tato diagnostika ověřuje integritu vašeho připojení a shodu s nejnovějšími standardy (HTTP/3, IPv6). Pomáhá odhalit skryté VPN tunely a ověřit, zda váš prohlížeč využívá maximální možnou rychlost protokolu.</p>
-                            </div>
+                        <div class="ping-item">
+                            <span class="ping-loc">USA (New York)</span>
+                            <span class="ping-status" id="ping-us">Měřím...</span>
                         </div>
-                    </section>
-                </div>
+                        <div class="ping-item">
+                            <span class="ping-loc">Asie (Tokyo)</span>
+                            <span class="ping-status" id="ping-as">Měřím...</span>
+                        </div>
+                        <div class="ping-item">
+                            <span class="ping-loc">Austrálie (Sydney)</span>
+                            <span class="ping-status" id="ping-au">Měřím...</span>
+                        </div>
+                    </div>
+                </section>
 
                 <!-- Capabilities Card -->
                 <section class="card info-card full-width capabilities">

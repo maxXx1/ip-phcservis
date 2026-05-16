@@ -168,6 +168,49 @@ body {
   font-size: 1.5rem; /* IPv6 can be long */
 }
 
+.ptr-record {
+  display: block;
+  font-family: 'Fira Code', monospace;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-top: 0.25rem;
+  opacity: 0.7;
+}
+
+.ping-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1rem;
+  margin-top: 0.5rem;
+}
+
+.ping-item {
+  background: var(--surface-light);
+  padding: 1rem;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+  text-align: center;
+}
+
+.ping-loc {
+  display: block;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  margin-bottom: 0.5rem;
+}
+
+.ping-status {
+  font-weight: 700;
+  color: var(--primary);
+  font-family: 'Fira Code', monospace;
+}
+
+.status-safe { color: var(--success); }
+.status-warning { color: #f59e0b; }
+.status-danger { color: var(--error); }
+
 .icon-btn {
   background: var(--surface-light);
   border: 1px solid var(--border);
