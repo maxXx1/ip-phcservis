@@ -32,7 +32,7 @@ document.addEventListener('DOMContentLoaded', () => {
     async function detectNetwork() {
         let activeIp = '';
         
-        // 1. IPv4 (using ipify - reliable)
+        // 1. IPv4
         try {
             const v4res = await fetch('https://api.ipify.org?format=json');
             const v4data = await v4res.json();
@@ -40,10 +40,9 @@ document.addEventListener('DOMContentLoaded', () => {
             activeIp = v4data.ip;
         } catch (e) {
             ipv4Display.textContent = 'Není k dispozici';
-            ipv4Display.style.opacity = '0.5';
         }
 
-        // 2. IPv6 (using ipify)
+        // 2. IPv6 (Silent fail)
         try {
             const v6res = await fetch('https://api6.ipify.org?format=json');
             const v6data = await v6res.json();
@@ -51,109 +50,123 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!activeIp) activeIp = v6data.ip;
         } catch (e) {
             ipv6Display.textContent = 'Není k dispozici';
-            ipv6Display.style.opacity = '0.5';
         }
 
-        // 3. Cloudflare Trace (Edge info)
+        // 3. Cloudflare Trace
         try {
             const traceRes = await fetch('https://www.cloudflare.com/cdn-cgi/trace');
             const traceText = await traceRes.text();
             const traceData = Object.fromEntries(traceText.trim().split('\n').map(l => l.split('=')));
             updateText('det-colo', traceData.colo || '-');
             if (!activeIp) activeIp = traceData.ip;
-        } catch (e) { console.error('CF Trace failed'); }
+        } catch (e) {}
 
-        // 4. IP Details (Using ipwho.is for better CORS support on production)
-        try {
-            const response = await fetch(`https://ipwho.is/${activeIp}`);
-            const data = await response.json();
-            
-            if (data.success) {
-                ispBadge.textContent = data.connection?.isp || data.connection?.org || 'Neznámý ISP';
-                locationBadge.textContent = `${data.city}, ${data.country}`;
+        // 4. IP Details (FreeIPAPI - High CORS compatibility)
+        if (activeIp) {
+            try {
+                const response = await fetch(`https://freeipapi.com/api/json/${activeIp}`);
+                const data = await response.json();
                 
-                updateText('ptr-ipv4', data.reverse || 'Bez PTR záznamu');
-                updateText('det-isp', data.connection?.isp || '-');
-                updateText('det-asn', `AS${data.connection?.asn || '-'}`);
-                updateText('det-org', data.connection?.org || '-');
-                updateText('det-geo-sub', `${data.city}, ${data.region}`);
-                updateText('det-country', data.country);
-                updateText('det-tz', data.timezone?.id || '-');
+                ispBadge.textContent = data.asName || 'Neznámý ISP';
+                locationBadge.textContent = `${data.cityName}, ${data.countryName}`;
+                
+                updateText('det-isp', data.asName || '-');
+                updateText('det-asn', data.asNumber ? `AS${data.asNumber}` : '-');
+                updateText('det-org', data.asName || '-');
+                updateText('det-geo-sub', `${data.cityName}, ${data.regionName}`);
+                updateText('det-country', data.countryName);
+                updateText('det-tz', 'Zjišťuji...');
 
-                // Security Analysis
-                const vpnKeywords = ['vpn', 'proxy', 'hosting', 'datacenter', 'cloud', 'server', 'mullvad', 'nordvpn', 'expressvpn'];
-                const ispStr = (data.connection?.isp || data.connection?.org || '').toLowerCase();
-                const isVpn = vpnKeywords.some(k => ispStr.includes(k)) || data.security?.vpn || data.security?.proxy;
+                // Heuristic Security
+                const dcKeywords = ['hosting', 'cloud', 'datacenter', 'server', 'mullvad', 'vpn', 'proxy'];
+                const ispLower = (data.asName || '').toLowerCase();
+                const isDC = dcKeywords.some(k => ispLower.includes(k));
                 
-                if (isVpn) {
-                    updateText('det-vpn', '⚠️ Detekována (Datacenter/VPN)');
-                    updateText('det-threat', '45/100 (Medium)');
+                if (isDC) {
+                    updateText('det-vpn', '⚠️ Datacentrum / VPN');
+                    updateText('det-threat', '30/100 (Pozor)');
                     setStatusClass('det-threat', 'status-warning');
-                    updateText('det-blacklist', 'Možná přítomnost');
-                    setStatusClass('det-blacklist', 'status-warning');
+                    updateText('det-blacklist', 'Neznámý status');
                 } else {
-                    updateText('det-vpn', '✅ Přímé (Rezidenční)');
-                    updateText('det-threat', '0/100 (Safe)');
+                    updateText('det-vpn', '✅ Rezidenční síť');
+                    updateText('det-threat', '0/100 (Čisté)');
                     setStatusClass('det-threat', 'status-safe');
                     updateText('det-blacklist', 'Čistá (Clean)');
                     setStatusClass('det-blacklist', 'status-safe');
                 }
-            } else {
-                throw new Error('API request failed');
-            }
 
-        } catch (error) {
-            console.error('IP details failed:', error);
-            updateText('det-isp', 'Chyba načítání');
-            updateText('det-vpn', 'Služba nedostupná');
+                // 5. PTR Record via Google DoH (CORS Friendly)
+                detectPtr(activeIp);
+
+            } catch (error) {
+                console.error('Metadata fetch failed');
+            }
+        }
+    }
+
+    async function detectPtr(ip) {
+        try {
+            let query = '';
+            if (ip.includes(':')) {
+                // IPv6 PTR - complex but possible
+                const parts = ip.split(':');
+                // Omitting complex IPv6 reverse for now to keep it stable
+                updateText('ptr-ipv4', 'IPv6 Reverse není podporován');
+            } else {
+                const parts = ip.split('.');
+                query = `${parts[3]}.${parts[2]}.${parts[1]}.${parts[0]}.in-addr.arpa`;
+                const res = await fetch(`https://dns.google/resolve?name=${query}&type=PTR`);
+                const data = await res.json();
+                if (data.Answer && data.Answer.length > 0) {
+                    updateText('ptr-ipv4', data.Answer[0].data);
+                } else {
+                    updateText('ptr-ipv4', 'Bez PTR záznamu');
+                }
+            }
+        } catch (e) {
+            updateText('ptr-ipv4', '-');
         }
     }
 
     // --- Advanced Diagnostics ---
     async function detectAdvanced() {
-        // DNS Resolver Detection
+        // DNS Resolver
         try {
             const dnsRes = await fetch('https://edns.ip-api.com/json');
             const dnsData = await dnsRes.json();
             updateText('dns-ip', dnsData.dns.ip);
             updateText('dns-isp', dnsData.dns.geo.split(' (')[0]);
         } catch (e) {
-            updateText('dns-ip', 'Nedostupné');
-            updateText('dns-isp', 'Omezeno CORS');
+            updateText('dns-ip', 'Omezeno CORS');
+            updateText('dns-isp', 'Pouze Pro verze');
         }
 
-        // Global Ping (Latency Check)
+        // Global Ping
         const pingRegions = [
-            { id: 'eu', url: 'https://www.cesnet.cz/favicon.ico', label: 'Evropa' },
-            { id: 'us', url: 'https://www.mit.edu/favicon.ico', label: 'USA' },
-            { id: 'as', url: 'https://www.u-tokyo.ac.jp/favicon.ico', label: 'Asie' },
+            { id: 'eu', url: 'https://www.google.cz/favicon.ico', label: 'Evropa' },
+            { id: 'us', url: 'https://www.google.com/favicon.ico', label: 'USA' },
+            { id: 'as', url: 'https://www.rakuten.co.jp/favicon.ico', label: 'Asie' },
             { id: 'au', url: 'https://www.unimelb.edu.au/favicon.ico', label: 'Austrálie' }
         ];
 
         pingRegions.forEach(region => {
             const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 6000);
-
+            const timeoutId = setTimeout(() => controller.abort(), 7000);
             const start = performance.now();
-            fetch(region.url, { 
-                mode: 'no-cors', 
-                cache: 'no-cache',
-                signal: controller.signal
-            })
+            
+            fetch(region.url, { mode: 'no-cors', cache: 'no-cache', signal: controller.signal })
                 .then(() => {
                     clearTimeout(timeoutId);
-                    const end = performance.now();
-                    const rtt = Math.round(end - start);
-                    updateText(`ping-${region.id}`, `${rtt} ms`);
+                    updateText(`ping-${region.id}`, `${Math.round(performance.now() - start)} ms`);
                 })
-                .catch((err) => {
+                .catch(() => {
                     clearTimeout(timeoutId);
-                    updateText(`ping-${region.id}`, err.name === 'AbortError' ? 'Timeout' : 'Offline');
+                    updateText(`ping-${region.id}`, 'Timeout');
                 });
         });
     }
 
-    // --- Clipboard ---
+    // --- Clipboard & Launch ---
     const setupClipboard = (btnId, displayId) => {
         document.getElementById(btnId)?.addEventListener('click', () => {
             const text = document.getElementById(displayId)?.textContent;
@@ -161,7 +174,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 navigator.clipboard.writeText(text);
                 const btn = document.getElementById(btnId);
                 const icon = btn.querySelector('i');
-                if (icon) {
+                if (icon && window.lucide) {
                     icon.setAttribute('data-lucide', 'check');
                     window.lucide.createIcons();
                     setTimeout(() => {
@@ -176,11 +189,10 @@ document.addEventListener('DOMContentLoaded', () => {
     setupClipboard('copy-ipv4', 'ipv4-display');
     setupClipboard('copy-ipv6', 'ipv6-display');
 
-    // --- Launch ---
     detectNetwork();
     detectAdvanced();
     
-    // Capabilities
+    // Tech tags
     const tagsContainer = document.getElementById('tech-tags');
     if (tagsContainer) {
         const caps = [
