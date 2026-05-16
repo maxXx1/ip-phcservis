@@ -121,24 +121,33 @@ document.addEventListener('DOMContentLoaded', () => {
             updateText('dns-ip', 'Nedostupné');
         }
 
-        // Global Ping (Simulated Latency Check)
+        // Global Ping (Latency Check)
         const pingRegions = [
-            { id: 'eu', url: 'https://speed.hetzner.de/100MB.bin', label: 'Evropa' },
-            { id: 'us', url: 'https://speed.cloudflare.com/cdn-cgi/trace', label: 'USA' }, // Fast way to check
-            { id: 'as', url: 'https://speedtest.tokyo.linode.com/100MB-tokyo.bin', label: 'Asie' },
-            { id: 'au', url: 'https://speedtest.sydney.linode.com/100MB-sydney.bin', label: 'Austrálie' }
+            { id: 'eu', url: 'https://www.cesnet.cz/', label: 'Evropa' },
+            { id: 'us', url: 'https://www.mit.edu/', label: 'USA' },
+            { id: 'as', url: 'https://www.u-tokyo.ac.jp/', label: 'Asie' },
+            { id: 'au', url: 'https://www.unimelb.edu.au/', label: 'Austrálie' }
         ];
 
         pingRegions.forEach(region => {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 5000); // 5s timeout
+
             const start = performance.now();
-            fetch(region.url, { mode: 'no-cors', cache: 'no-cache' })
+            fetch(region.url, { 
+                mode: 'no-cors', 
+                cache: 'no-cache',
+                signal: controller.signal
+            })
                 .then(() => {
+                    clearTimeout(timeoutId);
                     const end = performance.now();
                     const rtt = Math.round(end - start);
                     updateText(`ping-${region.id}`, `${rtt} ms`);
                 })
-                .catch(() => {
-                    updateText(`ping-${region.id}`, 'Timeout');
+                .catch((err) => {
+                    clearTimeout(timeoutId);
+                    updateText(`ping-${region.id}`, err.name === 'AbortError' ? 'Timeout' : 'Error');
                 });
         });
     }
