@@ -32,7 +32,7 @@ document.addEventListener('DOMContentLoaded', () => {
     async function detectNetwork() {
         let activeIp = '';
         
-        // 1. IPv4
+        // 1. IPv4 (using ipify - reliable)
         try {
             const v4res = await fetch('https://api.ipify.org?format=json');
             const v4data = await v4res.json();
@@ -43,7 +43,7 @@ document.addEventListener('DOMContentLoaded', () => {
             ipv4Display.style.opacity = '0.5';
         }
 
-        // 2. IPv6
+        // 2. IPv6 (using ipify)
         try {
             const v6res = await fetch('https://api6.ipify.org?format=json');
             const v6data = await v6res.json();
@@ -63,49 +63,49 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!activeIp) activeIp = traceData.ip;
         } catch (e) { console.error('CF Trace failed'); }
 
-        // 4. IP Details (ipapi.co)
+        // 4. IP Details (Using ipwho.is for better CORS support on production)
         try {
-            const response = await fetch(`https://ipapi.co/${activeIp}/json/`);
+            const response = await fetch(`https://ipwho.is/${activeIp}`);
             const data = await response.json();
             
-            ispBadge.textContent = data.org || 'Neznámý ISP';
-            locationBadge.textContent = `${data.city}, ${data.country_name}`;
-            
-            updateText('ptr-ipv4', data.hostname || 'Bez PTR záznamu');
-            updateText('det-isp', data.org);
-            updateText('det-asn', data.asn);
-            updateText('det-org', data.org);
-            updateText('det-geo-sub', `${data.city}, ${data.region}`);
-            updateText('det-country', data.country_name);
-            updateText('det-tz', data.timezone);
+            if (data.success) {
+                ispBadge.textContent = data.connection?.isp || data.connection?.org || 'Neznámý ISP';
+                locationBadge.textContent = `${data.city}, ${data.country}`;
+                
+                updateText('ptr-ipv4', data.reverse || 'Bez PTR záznamu');
+                updateText('det-isp', data.connection?.isp || '-');
+                updateText('det-asn', `AS${data.connection?.asn || '-'}`);
+                updateText('det-org', data.connection?.org || '-');
+                updateText('det-geo-sub', `${data.city}, ${data.region}`);
+                updateText('det-country', data.country);
+                updateText('det-tz', data.timezone?.id || '-');
 
-            // BGP/Peering Simulation
-            const conn = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
-            if (conn) {
-                updateText('det-con-type', conn.effectiveType?.toUpperCase() || '-');
-            }
-
-            // Security Analysis
-            const vpnKeywords = ['vpn', 'proxy', 'hosting', 'datacenter', 'cloud', 'server', 'mullvad', 'nordvpn', 'expressvpn'];
-            const isp = (data.org || '').toLowerCase();
-            const isVpn = vpnKeywords.some(k => isp.includes(k));
-            
-            if (isVpn) {
-                updateText('det-vpn', '⚠️ Detekována (Datacenter/VPN)');
-                updateText('det-threat', '45/100 (Medium)');
-                setStatusClass('det-threat', 'status-warning');
-                updateText('det-blacklist', 'Možná přítomnost');
-                setStatusClass('det-blacklist', 'status-warning');
+                // Security Analysis
+                const vpnKeywords = ['vpn', 'proxy', 'hosting', 'datacenter', 'cloud', 'server', 'mullvad', 'nordvpn', 'expressvpn'];
+                const ispStr = (data.connection?.isp || data.connection?.org || '').toLowerCase();
+                const isVpn = vpnKeywords.some(k => ispStr.includes(k)) || data.security?.vpn || data.security?.proxy;
+                
+                if (isVpn) {
+                    updateText('det-vpn', '⚠️ Detekována (Datacenter/VPN)');
+                    updateText('det-threat', '45/100 (Medium)');
+                    setStatusClass('det-threat', 'status-warning');
+                    updateText('det-blacklist', 'Možná přítomnost');
+                    setStatusClass('det-blacklist', 'status-warning');
+                } else {
+                    updateText('det-vpn', '✅ Přímé (Rezidenční)');
+                    updateText('det-threat', '0/100 (Safe)');
+                    setStatusClass('det-threat', 'status-safe');
+                    updateText('det-blacklist', 'Čistá (Clean)');
+                    setStatusClass('det-blacklist', 'status-safe');
+                }
             } else {
-                updateText('det-vpn', '✅ Přímé (Rezidenční)');
-                updateText('det-threat', '0/100 (Safe)');
-                setStatusClass('det-threat', 'status-safe');
-                updateText('det-blacklist', 'Čistá (Clean)');
-                setStatusClass('det-blacklist', 'status-safe');
+                throw new Error('API request failed');
             }
 
         } catch (error) {
             console.error('IP details failed:', error);
+            updateText('det-isp', 'Chyba načítání');
+            updateText('det-vpn', 'Služba nedostupná');
         }
     }
 
@@ -119,19 +119,20 @@ document.addEventListener('DOMContentLoaded', () => {
             updateText('dns-isp', dnsData.dns.geo.split(' (')[0]);
         } catch (e) {
             updateText('dns-ip', 'Nedostupné');
+            updateText('dns-isp', 'Omezeno CORS');
         }
 
         // Global Ping (Latency Check)
         const pingRegions = [
-            { id: 'eu', url: 'https://www.cesnet.cz/', label: 'Evropa' },
-            { id: 'us', url: 'https://www.mit.edu/', label: 'USA' },
-            { id: 'as', url: 'https://www.u-tokyo.ac.jp/', label: 'Asie' },
-            { id: 'au', url: 'https://www.unimelb.edu.au/', label: 'Austrálie' }
+            { id: 'eu', url: 'https://www.cesnet.cz/favicon.ico', label: 'Evropa' },
+            { id: 'us', url: 'https://www.mit.edu/favicon.ico', label: 'USA' },
+            { id: 'as', url: 'https://www.u-tokyo.ac.jp/favicon.ico', label: 'Asie' },
+            { id: 'au', url: 'https://www.unimelb.edu.au/favicon.ico', label: 'Austrálie' }
         ];
 
         pingRegions.forEach(region => {
             const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 5000); // 5s timeout
+            const timeoutId = setTimeout(() => controller.abort(), 6000);
 
             const start = performance.now();
             fetch(region.url, { 
@@ -147,7 +148,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 })
                 .catch((err) => {
                     clearTimeout(timeoutId);
-                    updateText(`ping-${region.id}`, err.name === 'AbortError' ? 'Timeout' : 'Error');
+                    updateText(`ping-${region.id}`, err.name === 'AbortError' ? 'Timeout' : 'Offline');
                 });
         });
     }
