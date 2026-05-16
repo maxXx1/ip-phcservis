@@ -11,24 +11,16 @@
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
 </head>
 <body>
     <div id="app">
-        <div class="background-orchestra">
-            <div class="orb orb-1"></div>
-            <div class="orb orb-2"></div>
-            <div class="orb orb-3"></div>
-            <div class="glass-overlay"></div>
-        </div>
-
         <div class="main-layout">
             <header class="app-header">
                 <div class="logo-container">
-                    <div class="logo-accent"></div>
                     <h1 class="brand-name">PHC servis <span>NetTools</span></h1>
                 </div>
                 <div class="header-status">
@@ -40,19 +32,30 @@
             <div class="dashboard-grid">
                 <!-- Hero IP Card -->
                 <section class="card hero-card full-width">
-                    <div class="card-glow"></div>
-                    <div class="ip-container">
-                        <span class="label">VAŠE VEŘEJNÁ IP ADRESA</span>
-                        <div class="ip-row">
-                            <h2 id="main-ip" class="shimmer-text">Zjišťování...</h2>
-                            <button id="copy-ip" class="icon-btn" title="Kopírovat IP">
-                                <i data-lucide="copy"></i>
-                            </button>
+                    <div class="ip-dashboard">
+                        <div class="ip-box">
+                            <span class="label">IPv4 Adresa</span>
+                            <div class="ip-row">
+                                <h2 id="ipv4-display">Zjišťování...</h2>
+                                <button id="copy-ipv4" class="icon-btn" title="Kopírovat IPv4">
+                                    <i data-lucide="copy"></i>
+                                </button>
+                            </div>
                         </div>
-                        <div id="ip-meta" class="meta-row">
-                            <span class="badge" id="isp-badge">Načítám ISP...</span>
-                            <span class="badge secondary" id="location-badge">Lokalizace...</span>
+                        <div class="ip-divider"></div>
+                        <div class="ip-box">
+                            <span class="label">IPv6 Adresa</span>
+                            <div class="ip-row">
+                                <h2 id="ipv6-display">Zjišťování...</h2>
+                                <button id="copy-ipv6" class="icon-btn" title="Kopírovat IPv6">
+                                    <i data-lucide="copy"></i>
+                                </button>
+                            </div>
                         </div>
+                    </div>
+                    <div id="ip-meta" class="meta-row">
+                        <span class="badge" id="isp-badge">Načítám ISP...</span>
+                        <span class="badge" id="location-badge">Lokalizace...</span>
                     </div>
                 </section>
 
@@ -137,7 +140,7 @@
                 <!-- Capabilities Card -->
                 <section class="card info-card full-width capabilities">
                     <div class="card-header-small">
-                        <i data-lucide="shield-check"></i>
+                        <i data-lucide="layers"></i>
                         <h4>Podporované technologie & Ochrana</h4>
                     </div>
                     <div class="tag-cloud" id="tech-tags">

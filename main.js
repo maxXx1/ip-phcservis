@@ -7,7 +7,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // --- State & Selectors ---
-    const mainIpDisplay = document.getElementById('main-ip');
+    const ipv4Display = document.getElementById('ipv4-display');
+    const ipv6Display = document.getElementById('ipv6-display');
     const ispBadge = document.getElementById('isp-badge');
     const locationBadge = document.getElementById('location-badge');
     const yearSpan = document.getElementById('year');
@@ -22,20 +23,33 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- Main IP & Network ---
     async function detectNetwork() {
+        // 1. Detect IPv4
         try {
-            const traceRes = await fetch('https://www.cloudflare.com/cdn-cgi/trace');
-            const traceText = await traceRes.text();
-            const traceData = {};
-            traceText.split('\n').forEach(line => {
-                const [key, value] = line.split('=');
-                if (key && value) traceData[key] = value;
-            });
+            const v4res = await fetch('https://api.ipify.org?format=json');
+            const v4data = await v4res.json();
+            ipv4Display.textContent = v4data.ip;
+        } catch (e) {
+            ipv4Display.textContent = 'Není k dispozici';
+            ipv4Display.style.opacity = '0.5';
+        }
 
-            const publicIp = traceData.ip || 'Neznámá';
-            mainIpDisplay.textContent = publicIp;
-            mainIpDisplay.classList.remove('shimmer-text');
+        // 2. Detect IPv6
+        try {
+            const v6res = await fetch('https://api6.ipify.org?format=json');
+            const v6data = await v6res.json();
+            ipv6Display.textContent = v6data.ip;
+        } catch (e) {
+            ipv6Display.textContent = 'Není k dispozici';
+            ipv6Display.style.opacity = '0.5';
+        }
 
-            const response = await fetch(`https://ipapi.co/${publicIp}/json/`);
+        // 3. Geolocation & ISP Details (using api64 to get whatever is primary)
+        try {
+            const traceRes = await fetch('https://api64.ipify.org?format=json');
+            const traceData = await traceRes.json();
+            const activeIp = traceData.ip;
+
+            const response = await fetch(`https://ipapi.co/${activeIp}/json/`);
             const data = await response.json();
             
             ispBadge.textContent = data.org || 'Neznámý ISP';
@@ -59,9 +73,12 @@ document.addEventListener('DOMContentLoaded', () => {
             const isVpn = vpnKeywords.some(k => isp.includes(k));
             updateText('det-vpn', isVpn ? '🔒 Detekována (VPN/Proxy)' : '✅ Přímé (Rezidenční)');
 
+            // Update the legacy IPv6 check in diagnostic card
+            const isV6Active = activeIp.includes(':') || ipv6Display.textContent.includes(':');
+            updateText('det-ipv6', isV6Active ? '✅ Aktivní' : '❌ Pouze IPv4');
+
         } catch (error) {
-            console.error('Network detection failed:', error);
-            mainIpDisplay.textContent = 'Chyba';
+            console.error('Network details failed:', error);
         }
     }
 
@@ -77,15 +94,6 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (e) {
             updateText('det-protocol', 'HTTP/2');
         }
-
-        try {
-            const v6res = await fetch('https://api64.ipify.org?format=json');
-            const v6data = await v6res.json();
-            const isV6 = v6data.ip.includes(':');
-            updateText('det-ipv6', isV6 ? `✅ Aktivní (${v6data.ip.substring(0, 15)}...)` : '❌ Pouze IPv4');
-        } catch (e) {
-            updateText('det-ipv6', 'Nedostupné');
-        }
         
         updateText('det-dnssec', '✅ Aktivní (Validováno)');
     }
@@ -93,6 +101,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- Capabilities ---
     function detectCapabilities() {
         const tagsContainer = document.getElementById('tech-tags');
+        if (!tagsContainer) return;
+        
         const caps = [
             { name: 'Cookies', val: navigator.cookieEnabled },
             { name: 'LocalStorage', val: !!window.localStorage },
@@ -112,21 +122,27 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // --- Clipboard ---
-    document.getElementById('copy-ip')?.addEventListener('click', () => {
-        const ip = mainIpDisplay.textContent;
-        if (ip && ip !== 'Zjišťování...') {
-            navigator.clipboard.writeText(ip);
-            const icon = document.querySelector('#copy-ip i');
-            if (icon) {
-                icon.setAttribute('data-lucide', 'check');
-                window.lucide.createIcons();
-                setTimeout(() => {
-                    icon.setAttribute('data-lucide', 'copy');
+    const setupClipboard = (btnId, displayId) => {
+        document.getElementById(btnId)?.addEventListener('click', () => {
+            const text = document.getElementById(displayId)?.textContent;
+            if (text && text !== 'Zjišťování...' && text !== 'Není k dispozici') {
+                navigator.clipboard.writeText(text);
+                const btn = document.getElementById(btnId);
+                const icon = btn.querySelector('i');
+                if (icon) {
+                    icon.setAttribute('data-lucide', 'check');
                     window.lucide.createIcons();
-                }, 2000);
+                    setTimeout(() => {
+                        icon.setAttribute('data-lucide', 'copy');
+                        window.lucide.createIcons();
+                    }, 2000);
+                }
             }
-        }
-    });
+        });
+    };
+
+    setupClipboard('copy-ipv4', 'ipv4-display');
+    setupClipboard('copy-ipv6', 'ipv6-display');
 
     // --- Launch ---
     detectNetwork();
